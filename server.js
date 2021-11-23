@@ -9,15 +9,16 @@ const cors = require("cors");
 app.use(cors());
 
 //comment
-let messages = {
-  "hlihbjhl-k": [
-    { message: "hi", sender: "inki" },
-    { message: "hi", sender: "inki" },
-  ],
-};
-
-let joinedClients = {
-  "hlihbjhl-k": ["ashu", "heera", "nina"],
+let roomData = {
+  "hlihbjhl-k": {
+    messages: [
+      { message: "hi", sender: "inki" },
+      { message: "hi", sender: "inki" },
+    ],
+    members: ["ashu", "heera", "nina"],
+    createdBy: "ashish singh",
+    roomId: "hlihbjhl-k",
+  },
 };
 
 const io = new Server(server, {
@@ -29,43 +30,32 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("user [" + socket.id + "] connected to socket");
 
+  socket.on("create room", ({ newRoomId, userName }) => {
+    const newRoomDataObject = {
+      messages: [],
+      members: [],
+      createdBy: userName,
+      roomId: newRoomId,
+    };
+
+    roomData[newRoomId] = newRoomDataObject;
+    socket.emit("room created", { newRoomId });
+  });
+
   socket.on("join room", ({ roomId, userName }) => {
-    console.log("inside join room...");
-    console.log(userName, roomId);
-
-    if (!joinedClients[roomId]) joinedClients[roomId] = [userName];
-    else joinedClients[roomId] = [userName, ...joinedClients[roomId]];
-
-    socket.join(roomId);
-    if (!messages[roomId]) socket.emit("joined room", { messages: 0 });
-    else
-      socket.emit("joined room", {
-        messages: messages[roomId],
+    if (roomData[roomId]) {
+      roomData[roomId].members.push(userName);
+      socket.emit("room joined", { roomData: roomData[roomId] });
+    } else {
+      socket.emit("can not join", {
+        reason: "room does not exists. Please create new room",
       });
-
-    console.log(joinedClients[roomId]);
-
-    io.to(roomId).emit("update active users", {
-      activeUsers: joinedClients[roomId],
-    });
+    }
   });
 
-  socket.on("text to room", ({ message, sender, roomId }) => {
-    console.log(sender, message, roomId);
-
-    if (messages[roomId] === undefined)
-      messages[roomId] = [{ message, sender }];
-    else messages[roomId] = [...messages[roomId], { message, sender }];
-    io.to(roomId).emit("recieved message", { messages: messages[roomId] });
-  });
-
-  socket.on("leave room", ({ roomId, userName }) => {
-    joinedClients[roomId] = joinedClients[roomId].filter(
-      (client) => client !== userName
-    );
-    io.to(roomId).emit("update active users", {
-      activeUsers: joinedClients[roomId],
-    });
+  socket.on("send message", ({ roomId, sender, message }) => {
+    roomData[roomId].messages.push({ message, sender });
+    io.to(roomId).emit("recieve message", { message, sender });
   });
 });
 
