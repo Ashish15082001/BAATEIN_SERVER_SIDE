@@ -55,7 +55,7 @@ io.on("connection", (socket) => {
 
   socket.on("send message", ({ roomId, sender, message }) => {
     roomData[roomId].messages.push({ message, sender });
-    io.to(roomId).emit("recieve message", { message, sender });
+    socket.to(roomId).emit("recieve message", { message, sender });
   });
 });
 
