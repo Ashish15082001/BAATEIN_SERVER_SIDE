@@ -23,7 +23,7 @@ let roomData = {
 
 const io = new Server(server, {
   cors: {
-    origin: "https://baatein-byashish.netlify.app",
+    origin: "https://baatein-byashish.netlify.app/",
   },
 });
 
@@ -44,8 +44,12 @@ io.on("connection", (socket) => {
 
   socket.on("join room", ({ roomId, userName }) => {
     if (roomData[roomId]) {
+      socket.join(roomId);
       roomData[roomId].members.push(userName);
       socket.emit("room joined", { roomData: roomData[roomId] });
+      socket.to(roomId).emit("update active users", {
+        updatedMembers: roomData[roomId].members,
+      });
     } else {
       socket.emit("can not join", {
         reason: "room does not exists. Please create new room",
