@@ -46,7 +46,7 @@ io.on("connection", (socket) => {
     if (roomData[roomId]) {
       socket.join(roomId);
 
-      if (!roomData[roomData].members.some((member) => member === userName))
+      if (!roomData[roomId].members.some((member) => member === userName))
         roomData[roomId].members.push(userName);
 
       socket.emit("room joined", { roomData: roomData[roomId] });
