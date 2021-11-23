@@ -23,7 +23,7 @@ let roomData = {
 
 const io = new Server(server, {
   cors: {
-    origin: "https://baatein-byashish.netlify.app/",
+    origin: "https://baatein-byashish.netlify.app",
   },
 });
 
