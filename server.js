@@ -23,7 +23,7 @@ let roomData = {
 
 const io = new Server(server, {
   cors: {
-    origin: "https://baatein-byashish.netlify.app",
+    origin: "http://localhost:3000",
   },
 });
 
@@ -53,14 +53,23 @@ io.on("connection", (socket) => {
       socket.to(roomId).emit("update active users", {
         updatedMembers: roomData[roomId].members,
       });
+
+      console.log("hi");
     } else {
       socket.emit("can not join", {
-        reason: "room does not exists. Please create new room",
+        reason:
+          "room does not exists. Please create new room or type correct room id",
       });
     }
   });
 
   socket.on("send message", ({ roomId, sender, message }) => {
+    console.log(roomId, sender, message);
+    console.log(roomData[roomId]);
+    console.log();
+    console.log();
+    console.log();
+
     roomData[roomId].messages.push({ message, sender });
     socket.to(roomId).emit("recieve message", { message, sender });
   });
