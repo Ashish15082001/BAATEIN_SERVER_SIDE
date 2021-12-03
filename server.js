@@ -22,7 +22,7 @@ const socketHistory = {
 
 const io = new Server(server, {
   cors: {
-    origin: "https://baatein-byashish.netlify.app",
+    origin: "https://baatein-by-ashishsingh.netlify.app/",
   },
 });
 
