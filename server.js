@@ -9,15 +9,14 @@ const cors = require("cors");
 app.use(cors());
 
 //comment
-let roomData = {
-  "hlihbjhl-k": {
-    messages: [
-      { message: "hi", sender: "inki" },
-      { message: "hi", sender: "inki" },
-    ],
-    members: ["ashu", "heera", "nina"],
-    createdBy: "ashish singh",
-    roomId: "hlihbjhl-k",
+const ValidRooms = {
+  asdasdsaasd: true,
+};
+
+const socketHistory = {
+  clientId: {
+    currentSocket: "socket object",
+    joinedRooms: ["room1", "room2", ["..."]],
   },
 };
 
@@ -28,33 +27,41 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log("user [" + socket.id + "] connected to socket");
+  socket.emit("store socket id", { socketId: socket.id });
 
-  socket.on("create room", ({ newRoomId, userName }) => {
-    const newRoomDataObject = {
-      messages: [],
-      members: [],
-      createdBy: userName,
-      roomId: newRoomId,
+  console.log(socket.id, ` connected`);
+  socket.on("create room", ({ newRoomId, clientId }) => {
+    ValidRooms[newRoomId] = true;
+    socket.join(newRoomId);
+
+    socketHistory[clientId] = {
+      currentSocket: socket,
+      joinedRooms: [newRoomId],
     };
 
-    roomData[newRoomId] = newRoomDataObject;
+    console.log("new room = ", newRoomId);
+    console.log("client id = ", clientId);
+
     socket.emit("room created", { newRoomId });
   });
 
-  socket.on("join room", ({ roomId, userName }) => {
-    if (roomData[roomId]) {
+  socket.on("join room", ({ roomId, userName, clientId }) => {
+    if (ValidRooms[roomId]) {
       socket.join(roomId);
 
-      if (!roomData[roomId].members.some((member) => member === userName))
-        roomData[roomId].members.push(userName);
+      socketHistory[clientId] = {
+        currentSocket: socket,
+        joinedRooms: [roomId],
+      };
 
-      socket.emit("room joined", { roomData: roomData[roomId] });
-      socket.to(roomId).emit("update active users", {
-        updatedMembers: roomData[roomId].members,
+      console.log("joined room = ", roomId);
+      console.log("clientId = ", clientId);
+
+      socket.emit("room joined", {
+        roomId,
+        userName,
       });
-
-      console.log("hi");
+      socket.to(roomId).emit("new user joined", { userName });
     } else {
       socket.emit("can not join", {
         reason:
@@ -63,15 +70,32 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("send message", ({ roomId, sender, message }) => {
+  socket.on("new message", ({ roomId, sender, message }) => {
     console.log(roomId, sender, message);
-    console.log(roomData[roomId]);
-    console.log();
-    console.log();
-    console.log();
+    socket.to(roomId).emit("store new message", { message, sender });
+  });
 
-    roomData[roomId].messages.push({ message, sender });
-    socket.to(roomId).emit("recieve message", { message, sender });
+  socket.on("notify", ({ recieverSocketID, title, userName, email }) => {
+    console.log("notify event...");
+    io.to(recieverSocketID).emit("new notification", {
+      title,
+      userName,
+      email,
+    });
+  });
+
+  socket.on("have i joined any room", ({ clientId }) => {
+    if (socketHistory[clientId]) {
+      const joinedRooms = socketHistory[clientId].joinedRooms;
+      const oldScocket = socketHistory[clientId].currentSocket;
+
+      socketHistory[clientId].currentSocket = socket;
+
+      for (const roomId of joinedRooms) {
+        oldScocket.leave(roomId);
+        socket.join(roomId);
+      }
+    }
   });
 });
 
