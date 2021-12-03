@@ -22,14 +22,13 @@ const socketHistory = {
 
 const io = new Server(server, {
   cors: {
-    origin: "https://baatein-by-ashishsingh.netlify.app/",
+    origin: "https://baatein-by-ashishsingh.netlify.app",
   },
 });
 
 io.on("connection", (socket) => {
   socket.emit("store socket id", { socketId: socket.id });
 
-  console.log(socket.id, ` connected`);
   socket.on("create room", ({ newRoomId, clientId }) => {
     ValidRooms[newRoomId] = true;
     socket.join(newRoomId);
@@ -38,9 +37,6 @@ io.on("connection", (socket) => {
       currentSocket: socket,
       joinedRooms: [newRoomId],
     };
-
-    console.log("new room = ", newRoomId);
-    console.log("client id = ", clientId);
 
     socket.emit("room created", { newRoomId });
   });
@@ -53,9 +49,6 @@ io.on("connection", (socket) => {
         currentSocket: socket,
         joinedRooms: [roomId],
       };
-
-      console.log("joined room = ", roomId);
-      console.log("clientId = ", clientId);
 
       socket.emit("room joined", {
         roomId,
@@ -71,12 +64,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("new message", ({ roomId, sender, message }) => {
-    console.log(roomId, sender, message);
     socket.to(roomId).emit("store new message", { message, sender });
   });
 
   socket.on("notify", ({ recieverSocketID, title, userName, email }) => {
-    console.log("notify event...");
     io.to(recieverSocketID).emit("new notification", {
       title,
       userName,
